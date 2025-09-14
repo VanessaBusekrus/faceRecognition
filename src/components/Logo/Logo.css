@@ -1,0 +1,15 @@
+.Tilt {
+	display: flex;
+	align-items: center;   /* vertically center */
+	justify-content: center; /* horizontally center */
+	background: linear-gradient(to right, #83a4d4, #b6fbff);
+}
+  
+  .Tilt-inner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;  /* ensure it fills parent */
+	width: 100%;
+  }
+  
