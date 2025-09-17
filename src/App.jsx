@@ -65,16 +65,25 @@ class App extends Component {
       imageURL: '',
       box: {},
       route: 'signIn',
-      isSignedIn: false
+      isSignedIn: false,
+      user: {
+        id: '',
+        entries: 0
+      }
     }
   }
 
-  // NEW!
   calculateFaceLocation = (data) => {
+    if (!data.outputs || data.outputs.length === 0) {
+      console.warn("No face detected or invalid response:", data);
+      return null;
+    }
+
     const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
     const image = document.getElementById('inputImage');
     const width = Number(image.width);
     const height = Number(image.height);
+    
     return {
       leftCol: clarifaiFace.left_col * width,
       topRow: clarifaiFace.top_row * height,
@@ -83,7 +92,6 @@ class App extends Component {
     }
   }
 
-  // NEW!
   displayFaceBox = (box) => {
     this.setState({box: box});
   }
@@ -92,30 +100,42 @@ class App extends Component {
     this.setState({input: event.target.value});
   }
 
-  onButtonSubmit = () => {
+  onButtonSubmit = async () => {
     this.setState({ imageURL: this.state.input });
-  
-    fetch("https://api.clarifai.com/v2/models/" + 'face-detection' + "/outputs", returnClarifaiRequestOptions(this.state.input))
-    .then(response => response.json()) //NEW!
-    .then(response => {
-      console.log('hi', response)
-      if (response) {
-        fetch('http://localhost:3000/image', {
-          method: 'put',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            id: this.state.user.id
-          })
-        })
-          .then(response => response.json())
-          .then(count => {
-            this.setState(Object.assign(this.state.user, { entries: count}))
-          })
-      }
-      this.displayFaceBox(this.calculateFaceLocation(response))
-    })
-    .catch(err => console.log(err));
-  }
+    const MODEL_ID = 'face-detection';
+    const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
+      
+    try {
+      const response = await fetch(
+        `/api/v2/models/${MODEL_ID}/versions/${MODEL_VERSION_ID}/outputs`,
+        returnClarifaiRequestOptions(this.state.input)
+      );
+      
+
+      const data = await response.json();
+      console.log("Clarifai Response:", data);
+
+      // if (data) {
+      //   const updateRes = await fetch("/api/image", {
+      //     method: "PUT",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({
+      //       id: this.state.user.id
+      //     })
+      //   });
+
+      //   const count = await updateRes.json();
+      //   this.setState(Object.assign(this.state.user, { entries: count }));
+      // }
+
+      const box = this.calculateFaceLocation(data);
+      if (box) {
+        this.displayFaceBox(box);
+        }
+      } catch (err) {
+      console.error("Error fetching Clarifai data:", err);
+    }
+  };
 
   onRouteChange = (route) => {
     if (route === 'signOut') {
