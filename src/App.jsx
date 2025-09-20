@@ -1,3 +1,4 @@
+/*Importing components, hooks, and styles*/
 import './App.css'
 import Navigation from './components/Navigation/Navigation.jsx';
 import Logo from './components/Logo/Logo.jsx';
@@ -7,8 +8,9 @@ import FaceRecognition from './components/FaceRecognition/FaceRecognition.jsx';
 import SignIn from './components/SignIn/SignIn.jsx';
 import Register from './components/Register/Register.jsx';
 import ParticlesBg from 'particles-bg';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
+/*Peparing the API request from Clarifai*/
 const returnClarifaiRequestOptions = (imageURL) => {
   // Your PAT (Personal Access Token) can be found in the Account's Security section
   const PAT = import.meta.env.VITE_API_PAT;
@@ -55,12 +57,47 @@ const App = () => {
   const [box, setBox] = useState({});
   const [route, setRoute] = useState('signIn');
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [user, setUser] = useState({ id: '', entries: 0 });
+  const [user, setUser] = useState({
+      id: '', 
+      email: '', 
+      name: '',
+      entries: 0,
+      joined: ''
+    });
 
   const imageRef = useRef(null);
   const lastClarifaiData = useRef(null); // Hooks (useRef) always return a ref object
 
   // --- Functions ---
+  /* --- useEffect to check backend server connection on component mount ---
+  useEffect(() => {
+    // define an async function inside useEffect
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json(); // parse JSON
+        console.log(data); // do something with data
+      } catch (err) {
+        console.error('Error connecting to backend server:', err);
+      }
+    };
+    fetchData(); // call the async function
+  }, []); // empty dependency array => runs only once (componentDidMount)
+  */
+
+  const loadUser = (data) => {
+    setUser({
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      entries: data.entries,
+      joined: data.joined
+    });
+  }
+
   const onInputChange = (event) => setInput(event.target.value);
 
   const onImageLoad = () => {
@@ -91,11 +128,11 @@ const App = () => {
 
   const displayFaceBox = (box) => setBox(box);
 
-  const onButtonSubmit = async () => {
+  const onImageSubmit = async () => {
     setImageURL(input);
     const MODEL_ID = 'face-detection';
     const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
-      
+  
     try {
       const response = await fetch(
         `/api/v2/models/${MODEL_ID}/versions/${MODEL_VERSION_ID}/outputs`,
@@ -105,6 +142,25 @@ const App = () => {
       const data = await response.json();
       lastClarifaiData.current = data; // save API response
       console.log("Clarifai Response:", data);
+      
+      if (data) {
+        // Update user entries in backend
+        const countResponse = await fetch('http://localhost:3000/image', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: user.id
+          })
+        });
+
+      const count = await countResponse.json();
+
+        // Update user state correctly
+        setUser(prevUser => ({ ...prevUser, entries: count }));
+      }
+
+      const box = calculateFaceLocation(data);
+      if (box) displayFaceBox(box);
 
       // if (data) {
       //   const updateRes = await fetch("/api/image", {
@@ -139,16 +195,16 @@ const App = () => {
   let page;
 
   if (route === 'signIn') {
-    page = <SignIn onRouteChange={onRouteChange} />;
+    page = <SignIn loadUser={loadUser} onRouteChange={onRouteChange} />;
   } else if (route === 'register') {
-    page = <Register onRouteChange={onRouteChange} />;
+    page = <Register loadUser={loadUser} onRouteChange={onRouteChange} />;
   } else if (route === 'home') {
     page = (
       <>
-        <Rank />
+        <Rank name={user.name} entries={user.entries}/>
         <ImageLinkForm 
           onInputChange={onInputChange} 
-          onButtonSubmit={onButtonSubmit}
+          onImageSubmit={onImageSubmit}
         />
         <FaceRecognition
           box={box}
