@@ -155,7 +155,10 @@ const App = () => {
 
       const count = await countResponse.json();
 
-        // Update user state correctly
+      // In React, state is immutable, which means you shouldn’t directly modify the existing 
+      // state object. Instead, you create a new object with the updated values.
+      // { ...prevUser } copies all properties into a brand-new object.
+      // could also use osbject.assign() here  
         setUser(prevUser => ({ ...prevUser, entries: count }));
       }
 
