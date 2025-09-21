@@ -20,7 +20,6 @@ const SignIn = ({ onRouteChange, loadUser }) => {
   
 	  const user = await response.json();
   
-	  // Changed this here after I did the changes in server.js signIn route
 	  if (user.id) {
 		loadUser(user);
 		onRouteChange('home');

@@ -12,14 +12,9 @@ import { useState, useRef, useEffect } from 'react';
 
 /*Peparing the API request from Clarifai*/
 const returnClarifaiRequestOptions = (imageURL) => {
-  // Your PAT (Personal Access Token) can be found in the Account's Security section
   const PAT = import.meta.env.VITE_API_PAT;
-  // Specify the correct user_id/app_id pairings
-  // Since you're making inferences outside your app's scope
   const USER_ID = import.meta.env.VITE_API_USER_ID;
   const APP_ID = import.meta.env.VITE_API_APP_ID;
-  // Change these to whatever model and image URL you want to use
-  // const MODEL_ID = 'face-detection';
   const IMAGE_URL = imageURL;
 
   const raw = JSON.stringify({
@@ -69,14 +64,15 @@ const App = () => {
   const lastClarifaiData = useRef(null); // Hooks (useRef) always return a ref object
 
   // --- Functions ---
-  /* --- useEffect to check backend server connection on component mount ---
+  /* --- useEffect to check backend server connection on component mount --- */
   useEffect(() => {
     // define an async function inside useEffect
     const fetchData = async () => {
       try {
         const response = await fetch('http://localhost:3000/');
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          console.error(`HTTP error! status: ${response.status}`);
+          return;
         }
         const data = await response.json(); // parse JSON
         console.log(data); // do something with data
@@ -86,7 +82,7 @@ const App = () => {
     };
     fetchData(); // call the async function
   }, []); // empty dependency array => runs only once (componentDidMount)
-  */
+  
 
   const loadUser = (data) => {
     setUser({
