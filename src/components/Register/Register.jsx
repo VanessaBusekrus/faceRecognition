@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const Register = ({ onRouteChange, loadUser }) => {
+const Register = ({ handleRouteChange, handleSignIn }) => {
 	// useState hooks for form fields
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
@@ -23,8 +23,8 @@ const Register = ({ onRouteChange, loadUser }) => {
 			const data = await response.json();
 	  
 			if (data) {
-				loadUser(data);
-				onRouteChange('home');
+				handleSignIn(data);
+				handleRouteChange('home');
 		  }
 		} catch (err) {
 		  console.error("Error registering:", err);
@@ -80,7 +80,7 @@ const Register = ({ onRouteChange, loadUser }) => {
 					</div>
 					<div className="lh-copy mt3">
 					<p 
-						onClick={() => onRouteChange('signIn')} 
+						onClick={() => handleRouteChange('signIn')} 
 						className="f6 link dim black db pointer"
 						>
 							Sign in

@@ -1,9 +1,9 @@
-const Navigation = ({ route, onRouteChange }) => {
+const Navigation = ({ route, handleRouteChange }) => {
 	return (
 	  <nav style={{ display: 'flex', justifyContent: 'flex-end' }}>
 		{route === 'signIn' && (
 		  <p
-			onClick={() => onRouteChange('register')}
+			onClick={() => handleRouteChange('register')}
 			className="f3 link dim black underline pa3 pointer"
 		  >
 			Register
@@ -11,7 +11,7 @@ const Navigation = ({ route, onRouteChange }) => {
 		)}
 		{route === 'register' && (
 		  <p
-			onClick={() => onRouteChange('signIn')}
+			onClick={() => handleRouteChange('signIn')}
 			className="f3 link dim black underline pa3 pointer"
 		  >
 			Sign In
@@ -19,7 +19,7 @@ const Navigation = ({ route, onRouteChange }) => {
 		)}
 		{route === 'home' && (
 		  <p
-			onClick={() => onRouteChange('signOut')}
+			onClick={() => handleRouteChange('signOut')}
 			className="f3 link dim black underline pa3 pointer"
 		  >
 			Sign Out

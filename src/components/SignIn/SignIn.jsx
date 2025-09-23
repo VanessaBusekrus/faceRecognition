@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const SignIn = ({ onRouteChange, loadUser }) => {
+const SignIn = ({ handleRouteChange, handleSignIn }) => {
 	// useState hooks for form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,8 +21,8 @@ const SignIn = ({ onRouteChange, loadUser }) => {
 	  const user = await response.json();
   
 	  if (user.id) {
-		loadUser(user);
-		onRouteChange('home');
+      handleSignIn(user);
+      handleRouteChange('home');
 	  }
 	} catch (err) {
 	  console.error("Error signing in:", err);
@@ -68,7 +68,7 @@ const SignIn = ({ onRouteChange, loadUser }) => {
           </div>
           <div className="lh-copy mt3">
             <p
-              onClick={() => onRouteChange('register')}
+              onClick={() => handleRouteChange('register')}
               className="f6 link dim black db pointer"
             >
               Register
