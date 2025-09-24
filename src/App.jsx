@@ -89,7 +89,18 @@ const App = () => {
   const imageRef = useRef(null);
   const lastClarifaiData = useRef(null); // Hooks (useRef) always return a ref object
 
-  /* --- useEffect to check backend server connection on component mount --- */
+  /* --- useEffect to check backend server connection on component mount --- 
+   The arrow function () => { ... } is the callback that runs after the component mounts.
+   fetchData is an async function defined inside the useEffect to perform the fetch operation.
+
+  1. React calls your useEffect callback when component mounts
+  2. Your useEffect callback creates the fetchData function
+  3. Your useEffect callback then calls fetchData()
+  4. fetchData executes and makes the fetch request
+
+  - useEffect callback: () => { const fetchData = ...; fetchData(); }
+  - fetchData: Just a regular function you created inside that callback
+  */
   useEffect(() => {
     const fetchData = async () => {
       try {
