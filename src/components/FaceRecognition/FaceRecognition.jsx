@@ -1,7 +1,6 @@
 import './FaceRecognition.css';
 
-// are imageURL anf imageRef both necessary. Can we just use imageRef?
-const FaceRecognition = ({ imageURL, box, handleImageLoad, imageRef }) => {	
+const FaceRecognition = ({ imageURL, boxes, handleImageLoad, imageRef }) => {	
 	return (
 		<div className="center ma">
 			<div className="absolute mt2">
@@ -16,7 +15,19 @@ const FaceRecognition = ({ imageURL, box, handleImageLoad, imageRef }) => {
 					onLoad={handleImageLoad}
 				/>
 				)}
-				<div className="bounding-box" style={{top: box.topRow, right: box.rightCol, bottom: box.bottomRow, left: box.leftCol}}></div>
+				{/* Render multiple bounding boxes for each detected face */}
+				{boxes.map((box) => (
+					<div 
+						key={box.id}
+						className="bounding-box" 
+						style={{
+							top: box.topRow, 
+							right: box.rightCol, 
+							bottom: box.bottomRow, 
+							left: box.leftCol
+						}}
+					></div>
+				))}
 			</div>
 		</div>
 	);

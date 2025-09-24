@@ -1,5 +1,5 @@
-/* Improvements to implement:
-1. right only one face is detected. Add support for multiple faces
+/* Improvements implemented:
+✅ 1. Added support for multiple face detection - detects all faces in image and draws boxes around them
 */
 
 
@@ -20,7 +20,7 @@ import './App.css'
 
 /*Peparing the API request from Clarifai*/
 /*
-  We are sending a POST requesr to send data to the Clarifai face-detection endpoint (method: 'Post')
+  We are sending a POST request to send data to the Clarifai face-detection endpoint (method: 'Post')
   In headers, we we specify what kinf of data we send and include the API key (Authorization)
   body: rwa is the actual data we are sending. 
   Raw is created with a JSON.stringify(), which turn a JavaScript Object into a JSON string -> that JSON describes: who we are (user_id, app_id) and what image Clarifai should analyze.
@@ -30,7 +30,6 @@ const buildClarifaiRequestOptions = (imageURL) => {
   const PAT = import.meta.env.VITE_API_PAT;
   const USER_ID = import.meta.env.VITE_API_USER_ID;
   const APP_ID = import.meta.env.VITE_API_APP_ID;
-  const IMAGE_URL = imageURL;
 
   const raw = JSON.stringify({
     "user_app_id": {
@@ -41,7 +40,7 @@ const buildClarifaiRequestOptions = (imageURL) => {
         {
             "data": {
                 "image": {
-                    "url": IMAGE_URL
+                    "url": imageURL
                 }
             }
         }
@@ -82,7 +81,7 @@ const App = () => {
   */
   const [input, setInput] = useState('');
   const [imageURL, setImageURL] = useState('');
-  const [box, setBox] = useState({});
+  const [boxes, setBoxes] = useState([]); // Changed from single box to array of boxes
   const [route, setRoute] = useState('signIn');
   const [user, setUser] = useState({
       id: '', 
@@ -118,30 +117,89 @@ const App = () => {
   /*---Functions---*/
   /*-Utility/Helper functions-*/
 
-  const calculateFaceLocation = (data) => {
+  const calculateFaceLocations = (data) => {
     if (!data.outputs || data.outputs.length === 0) {
-      console.warn("No face detected or invalid response:", data); // Verify again because right now the error message is not even shown!
-      return null;
+      return [];
     }
 
-    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
+    const regions = data.outputs[0].data.regions;
+    if (!regions || regions.length === 0) {
+      return [];
+    }
+
     const image = imageRef.current;
     const width = Number(image.width);
     const height = Number(image.height);
     
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - (clarifaiFace.right_col * width),
-      bottomRow: height - (clarifaiFace.bottom_row * height)
-    }
+    // Calculate coordinates for all detected faces
+    return regions.map((region, index) => {
+      const boundingBox = region.region_info.bounding_box;
+      return {
+        id: index, // Add unique identifier for each face
+        leftCol: boundingBox.left_col * width,
+        topRow: boundingBox.top_row * height,
+        rightCol: width - (boundingBox.right_col * width),
+        bottomRow: height - (boundingBox.bottom_row * height)
+      };
+    });
   }
 
-  const setFaceBox = (box) => setBox(box);
+  const setFaceBoxes = setBoxes;
+
+  // Helper function to clear UI state
+  const clearUIState = () => {
+    setMessage('');
+    setImageURL('');
+    setBoxes([]); // Clear all boxes
+  };
+
+  // Helper function to call Clarifai API
+  const callClarifaiAPI = async (imageUrl) => {
+    const MODEL_ID = 'face-detection';
+    const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
+
+    const response = await fetch(
+      `/api/v2/models/${MODEL_ID}/versions/${MODEL_VERSION_ID}/outputs`,
+      buildClarifaiRequestOptions(imageUrl)
+    );
+
+    return await response.json();
+  };
+
+  // Helper function to validate face detection response
+  const validateFaceDetection = (data) => {
+    let regions;
+    if (data.outputs && data.outputs.length > 0 && data.outputs[0].data) {
+      regions = data.outputs[0].data.regions;
+    }
+    
+    // Check if we have valid regions with detected faces
+    if (regions && regions.length > 0) {
+      return { regions, faceCount: regions.length }; // Return both regions and count
+    }
+    
+    return null;
+  };
+
+  // Helper function to update user entries
+  // PUT request to the backend to update user information. 
+  // body: JSON.stringify({ id: user.id }) means you’re sending your user’s ID as JSON.
+  // Your backend then increments the entries count for that user and replies with the new number.
+  // Helper function to update user entries
+  const updateUserEntries = async (faceCount = 1) => {
+    
+    const countResponse = await fetch('http://localhost:3000/image', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.id, faceCount }) // Send face count to backend
+    });
+
+    const count = await countResponse.json();
+    setUser(prevUser => ({ ...prevUser, entries: count }));
+  };
 
 
   /*-Event Handlers-*/
-
   // Load user data after sign in or register
   const handleSignIn = (data) => {
     setUser({
@@ -162,9 +220,7 @@ const App = () => {
       name: '', 
       entries: 0,
       joined: '' });
-    setInput('');
-    setImageURL('');
-    setBox({});
+    clearUIState(); // Reuse existing function instead of duplicating
   }; 
 
   const handleRouteChange = (newRoute) => {
@@ -182,63 +238,39 @@ const App = () => {
 
   const handleImageLoad = () => {
     if (lastClarifaiData.current) {
-      const box = calculateFaceLocation(lastClarifaiData.current);
-      if (box) setFaceBox(box);
+      const boxes = calculateFaceLocations(lastClarifaiData.current);
+      if (boxes.length > 0) {
+        setFaceBoxes(boxes);
+      }
     }
   }
 
   const handleImageSubmit = async () => {
-    setMessage(''); // clear previous messages
-    setImageURL(''); // clear image
-    setBox({}); // clear box
-
-    const MODEL_ID = 'face-detection';
-    const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
+    clearUIState(); // Clear previous state
 
     try {
-      // await fetch() pauses until the HTTP request comes back
-      // we first hit Clarifai's face-detection endpoint and then with buildClarifaiRequestOptions we tell fetch what kind of request we are making
-      const response = await fetch(
-        `/api/v2/models/${MODEL_ID}/versions/${MODEL_VERSION_ID}/outputs`,
-        buildClarifaiRequestOptions(input)
-      );
-
-      // the response contains the server's answer, which is raw text. it then gets converted into a JavaScript Object (json).
-      // .json() converts the raw text response into a JavaScript object so we can access data.outputs[0].data.regions.
-      const data = await response.json();
+      // Call Clarifai API
+      const data = await callClarifaiAPI(input);
       lastClarifaiData.current = data; // save API response 
 
-      // Check if there are any faces
-      let regions;
-      if (data.outputs && data.outputs.length > 0 && data.outputs[0].data) {
-        regions = data.outputs[0].data.regions;
-      }
-      
-      if (!regions || regions.length === 0) {
-        setMessage('No face detected. Verify the URL and try again.');
+      // Validate face detection
+      const validationResult = validateFaceDetection(data);
+      if (!validationResult) {
+        setMessage('No faces detected. Verify the URL and try again.');
         return; // stop further processing
       }
 
-      setImageURL(input); // show image only if face detected. Sets the imageURL state, which triggers rendering the image
+      const { faceCount } = validationResult;
+      setMessage(`${faceCount} face${faceCount > 1 ? 's' : ''} detected!`);
+      setImageURL(input); // show image only if faces detected
 
-      // Update user entries
-      // PUT request to the backend to update user information. 
-      // body: JSON.stringify({ id: user.id }) means you’re sending your user’s ID as JSON.
-      // Your backend then increments the entries count for that user and replies with the new number.
-      const countResponse = await fetch('http://localhost:3000/image', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id })
-      });
-      const count = await countResponse.json();
-      setUser(prevUser => ({ ...prevUser, entries: count }));
+      updateUserEntries(faceCount); // Pass the number of faces detected
 
     } catch (err) {
       console.error("Error fetching Clarifai data:", err);
       setMessage('Error processing the image.');
     }
   };
-
 
   /*-Render logic-*/
   let page;
@@ -261,7 +293,7 @@ const App = () => {
         />
         {message && <div className="f6 red mv3">{message}</div>} {/* Display error/status message */}
         <FaceRecognition
-          box={box}
+          boxes={boxes}
           imageURL={imageURL}
           handleImageLoad={handleImageLoad}
           imageRef={imageRef} 
