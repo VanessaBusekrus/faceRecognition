@@ -1,6 +1,6 @@
 import './ImageLinkForm.css';
 
-const ImageLinkForm = ({ handleInputChange, handleImageSubmit, isLoading }) => {
+const ImageLinkForm = ({ handleInputChange, handleImageSubmit, isLoading, input }) => {
 	const handleSubmit = (event) => {
 		event.preventDefault(); // Prevent page refresh
 		handleImageSubmit(); // Call the parent's submit handler
@@ -24,6 +24,7 @@ const ImageLinkForm = ({ handleInputChange, handleImageSubmit, isLoading }) => {
 					<input 
 						className="f4 pa2 w-70" 
 						type="text" 
+						value={input}
 						onChange={handleInputChange}
 						placeholder="Enter image URL..."
 						required

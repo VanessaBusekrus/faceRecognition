@@ -281,6 +281,7 @@ const App = () => {
       setImageURL(input); // show image only if faces detected
 
       updateUserEntries(faceCount);
+      setInput(''); // Clear the input field after successful submission
       setIsLoading(false); // Stop loading
 
     } catch (err) {
@@ -310,6 +311,7 @@ const App = () => {
           handleInputChange={handleInputChange} 
           handleImageSubmit={handleImageSubmit}
           isLoading={isLoading}
+          input={input}
         />
         {message && (
           <div className={`f6 mv3 ${messageColor}`}>
