@@ -258,24 +258,22 @@ const App = () => {
   }
 
   const handleImageSubmit = async () => {
-    clearUIState(); // Clear previous state
-    setIsLoading(true); // Start loading
+    clearUIState();
+    setIsLoading(true);
     setMessage('🔍 Analyzing image...');
 
     try {
-      // Call Clarifai API
       const data = await callClarifaiAPI(input);
-      lastClarifaiData.current = data; // save API response 
+      lastClarifaiData.current = data; 
 
       // Validate face detection
       const validationResult = validateFaceDetection(data);
       if (!validationResult) {
         setMessage('No faces detected. Verify the URL and try again.');
         setIsLoading(false);
-        return; // stop further processing
+        return;
       }
 
-      // Object destructuring to get faceCount property from validationResult and put it into a new variable
       const { faceCount } = validationResult;
       setMessage(`Number of faces detected: ${faceCount}`);
       setImageURL(input); // show image only if faces detected

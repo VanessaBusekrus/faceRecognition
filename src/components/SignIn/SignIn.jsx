@@ -6,7 +6,7 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (event) => {
-	event.preventDefault(); // prevent page refresh
+	event.preventDefault(); // prevent page refresh to keep React state intact
   
 	try {
 	  const response = await fetch('http://localhost:3000/signin', {
@@ -20,7 +20,7 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
   
 	  const data = await response.json();
   
-	  // Check if the HTTP response was successful
+	  // Check if the HTTP request was successful (= server received my request and processed it successfully)
 	  if (response.ok) {
 		// Sign in successful - we should have valid user data
 		if (data.id && data.name && data.email) {
@@ -36,6 +36,7 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
 		alert('Invalid email or password. Please try again.');
 	  }
 	} catch (err) {
+    // Handles network or other unexpected errors that prevent the fetch from completing
 	  console.error("Error signing in:", err);
 	  alert('Sign in error. Please check your connection and try again.');
 	}
@@ -56,7 +57,7 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
                   name="email-address"
                   id="email-address"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)} // Update email state in real-time as user types
                   required
                 />
               </div>
