@@ -18,14 +18,26 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
 		})
 	  });
   
-	  const user = await response.json();
+	  const data = await response.json();
   
-	  if (user.id) {
-      handleSignIn(user);
-      handleRouteChange('home');
+	  // Check if the HTTP response was successful
+	  if (response.ok) {
+		// Sign in successful - we should have valid user data
+		if (data.id && data.name && data.email) {
+		  handleSignIn(data);
+		  handleRouteChange('home');
+		} else {
+		  console.error('Sign in succeeded but invalid user data received:', data);
+		  alert('Sign in error. Please try again.');
+		}
+	  } else {
+		// Sign in failed - show generic error message (don't reveal if user exists)
+		console.error('Sign in failed:', data);
+		alert('Invalid email or password. Please try again.');
 	  }
 	} catch (err) {
 	  console.error("Error signing in:", err);
+	  alert('Sign in error. Please check your connection and try again.');
 	}
   };
 

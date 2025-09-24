@@ -22,12 +22,24 @@ const Register = ({ handleRouteChange, handleSignIn }) => {
 	  
 			const data = await response.json();
 	  
-			if (data) {
-				handleSignIn(data);
-				handleRouteChange('home');
-		  }
+			// Check if the HTTP response was successful
+			if (response.ok) {
+				// Registration successful - we should have valid user data
+				if (data.id && data.name && data.email) {
+					handleSignIn(data);
+					handleRouteChange('home');
+				} else {
+					console.error('Registration succeeded but invalid user data received:', data);
+					alert('Registration error. Please try again.');
+				}
+			} else {
+				// Registration failed - show generic error message (don't reveal if user exists)
+				console.error('Registration failed:', data);
+				alert('Registration failed. Please check your information and try again.');
+			}
 		} catch (err) {
 		  console.error("Error registering:", err);
+		  alert('Registration error. Please check your connection and try again.');
 		}
 	  };
 
