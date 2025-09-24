@@ -85,6 +85,7 @@ const App = () => {
       joined: ''
     });
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const imageRef = useRef(null);
   const lastClarifaiData = useRef(null); // Hooks (useRef) always return a ref object
@@ -179,6 +180,7 @@ const App = () => {
     setMessage('');
     setImageURL('');
     setBoxes([]);
+    setIsLoading(false);
   };
 
   const callClarifaiAPI = async (imageUrl) => {
@@ -257,6 +259,8 @@ const App = () => {
 
   const handleImageSubmit = async () => {
     clearUIState(); // Clear previous state
+    setIsLoading(true); // Start loading
+    setMessage('🔍 Analyzing image...');
 
     try {
       // Call Clarifai API
@@ -267,6 +271,7 @@ const App = () => {
       const validationResult = validateFaceDetection(data);
       if (!validationResult) {
         setMessage('No faces detected. Verify the URL and try again.');
+        setIsLoading(false);
         return; // stop further processing
       }
 
@@ -276,10 +281,12 @@ const App = () => {
       setImageURL(input); // show image only if faces detected
 
       updateUserEntries(faceCount);
+      setIsLoading(false); // Stop loading
 
     } catch (err) {
       console.error("Error fetching Clarifai data:", err);
       setMessage('Error processing the image.');
+      setIsLoading(false); // Stop loading on error
     }
   };
 
@@ -291,14 +298,24 @@ const App = () => {
   } else if (route === 'register') {
     page = <Register handleSignIn={handleSignIn} handleRouteChange={handleRouteChange} />;
   } else if (route === 'home') {
+    let messageColor = 'red';
+    if (isLoading) {
+      messageColor = 'blue';
+    }
+
     page = (
       <>
         <Rank name={user.name} entries={user.entries}/>
         <ImageLinkForm 
           handleInputChange={handleInputChange} 
           handleImageSubmit={handleImageSubmit}
+          isLoading={isLoading}
         />
-        {message && <div className="f6 red mv3">{message}</div>}
+        {message && (
+          <div className={`f6 mv3 ${messageColor}`}>
+            {message}
+          </div>
+        )}
         <FaceRecognition
           boxes={boxes}
           imageURL={imageURL}
