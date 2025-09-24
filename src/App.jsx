@@ -1,9 +1,3 @@
-/* Improvements implemented:
-✅ 1. Added support for multiple face detection - detects all faces in image and draws boxes around them
-*/
-
-
-
 /*Importing external libraries, hooks, components, and styles*/
 import ParticlesBg from 'particles-bg';
 import { useState, useRef, useEffect } from 'react';
@@ -105,7 +99,6 @@ const App = () => {
           return; // need to check if this works!!
         }
         const data = await response.json(); // parse JSON
-        console.log(data); // do something with data
       } catch (err) {
         console.error('Error connecting to backend server:', err);
       }
@@ -117,13 +110,39 @@ const App = () => {
   /*---Functions---*/
   /*-Utility/Helper functions-*/
 
-  const calculateFaceLocations = (data) => {
+  // Helper function to get regions from Clarifai response
+  const getRegionsFromData = (data) => {
+    console.log('Clarifai API response data:', data); // Debug log
     if (!data.outputs || data.outputs.length === 0) {
-      return [];
+      return null;
     }
 
-    const regions = data.outputs[0].data.regions;
-    if (!regions || regions.length === 0) {
+    // Check if data exists before accessing regions
+    if (data.outputs[0].data) {
+      const regions = data.outputs[0].data.regions;
+      if (regions && regions.length > 0) {
+        return regions;
+      }
+    }
+
+    return null;
+  };
+
+  // Helper function to validate face detection response
+  const validateFaceDetection = (data) => {
+    const regions = getRegionsFromData(data);
+    
+    // Check if we have valid regions with detected faces
+    if (regions) {
+      return { regions, faceCount: regions.length }; // Return both regions and count
+    }
+    
+    return null;
+  };
+
+  const calculateFaceLocations = (data) => {
+    const regions = getRegionsFromData(data);
+    if (!regions) {
       return [];
     }
 
@@ -131,7 +150,6 @@ const App = () => {
     const width = Number(image.width);
     const height = Number(image.height);
     
-    // Calculate coordinates for all detected faces
     return regions.map((region, index) => {
       const boundingBox = region.region_info.bounding_box;
       return {
@@ -146,14 +164,12 @@ const App = () => {
 
   const setFaceBoxes = setBoxes;
 
-  // Helper function to clear UI state
   const clearUIState = () => {
     setMessage('');
     setImageURL('');
-    setBoxes([]); // Clear all boxes
+    setBoxes([]);
   };
 
-  // Helper function to call Clarifai API
   const callClarifaiAPI = async (imageUrl) => {
     const MODEL_ID = 'face-detection';
     const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
@@ -164,21 +180,6 @@ const App = () => {
     );
 
     return await response.json();
-  };
-
-  // Helper function to validate face detection response
-  const validateFaceDetection = (data) => {
-    let regions;
-    if (data.outputs && data.outputs.length > 0 && data.outputs[0].data) {
-      regions = data.outputs[0].data.regions;
-    }
-    
-    // Check if we have valid regions with detected faces
-    if (regions && regions.length > 0) {
-      return { regions, faceCount: regions.length }; // Return both regions and count
-    }
-    
-    return null;
   };
 
   // Helper function to update user entries
@@ -200,7 +201,6 @@ const App = () => {
 
 
   /*-Event Handlers-*/
-  // Load user data after sign in or register
   const handleSignIn = (data) => {
     setUser({
       id: data.id,
@@ -211,7 +211,6 @@ const App = () => {
     });
   }
 
-  // Reset state on sign out. 
   const handleSignOut = () => {
     lastClarifaiData.current = null;
     setUser({ 
@@ -220,8 +219,8 @@ const App = () => {
       name: '', 
       entries: 0,
       joined: '' });
-    clearUIState(); // Reuse existing function instead of duplicating
-  }; 
+    clearUIState();
+  }
 
   const handleRouteChange = (newRoute) => {
     if (newRoute === 'signOut') {
@@ -260,11 +259,12 @@ const App = () => {
         return; // stop further processing
       }
 
+      // Object destructuring to get faceCount property from validationResult and put it into a new variable
       const { faceCount } = validationResult;
-      setMessage(`${faceCount} face${faceCount > 1 ? 's' : ''} detected!`);
+      setMessage(`Number of faces detected: ${faceCount}`);
       setImageURL(input); // show image only if faces detected
 
-      updateUserEntries(faceCount); // Pass the number of faces detected
+      updateUserEntries(faceCount);
 
     } catch (err) {
       console.error("Error fetching Clarifai data:", err);
@@ -276,10 +276,6 @@ const App = () => {
   let page;
 
   if (route === 'signIn') {
-    // You’re passing the handleSignIn function defined in App.jsx...
-    // ...to the SignIn component, where it can be used as props.loadUser.
-    // Left side of = → the name of the prop inside the child component.
-    // Right side of = → the variable/function you’re passing from the parent.
     page = <SignIn handleSignIn={handleSignIn} handleRouteChange={handleRouteChange} />;
   } else if (route === 'register') {
     page = <Register handleSignIn={handleSignIn} handleRouteChange={handleRouteChange} />;
@@ -291,7 +287,7 @@ const App = () => {
           handleInputChange={handleInputChange} 
           handleImageSubmit={handleImageSubmit}
         />
-        {message && <div className="f6 red mv3">{message}</div>} {/* Display error/status message */}
+        {message && <div className="f6 red mv3">{message}</div>}
         <FaceRecognition
           boxes={boxes}
           imageURL={imageURL}
