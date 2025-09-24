@@ -209,9 +209,13 @@ const App = () => {
       lastClarifaiData.current = data; // save API response 
 
       // Check if there are any faces
-      const regions = data.outputs?.[0]?.data?.regions;
+      let regions;
+      if (data.outputs && data.outputs.length > 0 && data.outputs[0].data) {
+        regions = data.outputs[0].data.regions;
+      }
+      
       if (!regions || regions.length === 0) {
-        setMessage('No face detected in the image.');
+        setMessage('No face detected. Verify the URL and try again.');
         return; // stop further processing
       }
 
