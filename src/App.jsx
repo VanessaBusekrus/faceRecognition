@@ -232,6 +232,7 @@ const App = () => {
       entries: 0,
       joined: '' });
     clearUIState();
+    setInput('');
   }
 
   const handleRouteChange = (newRoute) => {
