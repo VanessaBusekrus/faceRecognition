@@ -88,7 +88,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const imageRef = useRef(null);
-  const lastClarifaiData = useRef(null); // Hooks (useRef) always return a ref object
+  const lastValidationResult = useRef(null); // Store processed validation result instead of raw data
 
   /* --- useEffect to check backend server connection on component mount --- 
    The arrow function () => { ... } is the callback that runs after the component mounts.
@@ -152,9 +152,8 @@ const App = () => {
     return null;
   };
 
-  const calculateFaceLocations = (data) => {
-    const regions = getRegionsFromData(data);
-    if (!regions) {
+  const calculateFaceLocations = (regions) => {
+    if (!regions || regions.length === 0) {
       return [];
     }
 
@@ -225,7 +224,7 @@ const App = () => {
   }
 
   const handleSignOut = () => {
-    lastClarifaiData.current = null;
+    lastValidationResult.current = null;
     setUser({ 
       id: '', 
       email: '', 
@@ -249,8 +248,8 @@ const App = () => {
   const handleInputChange = (event) => setInput(event.target.value);
 
   const handleImageLoad = () => {
-    if (lastClarifaiData.current) {
-      const boxes = calculateFaceLocations(lastClarifaiData.current);
+    if (lastValidationResult.current) {
+      const boxes = calculateFaceLocations(lastValidationResult.current.regions);
       if (boxes.length > 0) {
         setFaceBoxes(boxes);
       }
@@ -264,9 +263,8 @@ const App = () => {
 
     try {
       const data = await callClarifaiAPI(input);
-      lastClarifaiData.current = data; 
 
-      // Validate face detection
+      // Validate face detection once and store the result
       const validationResult = validateFaceDetection(data);
       if (!validationResult) {
         setMessage('No faces detected. Verify the URL and try again.');
@@ -274,18 +272,21 @@ const App = () => {
         return;
       }
 
+      // Store the validation result for later use in handleImageLoad
+      lastValidationResult.current = validationResult;
+
       const { faceCount } = validationResult;
       setMessage(`Number of faces detected: ${faceCount}`);
-      setImageURL(input); // show image only if faces detected
+      setImageURL(input);
 
       updateUserEntries(faceCount);
-      setInput(''); // Clear the input field after successful submission
-      setIsLoading(false); // Stop loading
+      setInput(''); 
+      setIsLoading(false);
 
     } catch (err) {
       console.error("Error fetching Clarifai data:", err);
       setMessage('Error processing the image.');
-      setIsLoading(false); // Stop loading on error
+      setIsLoading(false);
     }
   };
 
