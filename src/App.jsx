@@ -12,42 +12,6 @@ import Register from './components/Register/Register.jsx';
 
 import './App.css'
 
-
-const buildClarifaiRequestOptions = (imageURL) => {
-  const PAT = import.meta.env.VITE_API_PAT;
-  const USER_ID = import.meta.env.VITE_API_USER_ID;
-  const APP_ID = import.meta.env.VITE_API_APP_ID;
-
-  const raw = JSON.stringify({
-    "user_app_id": {
-        "user_id": USER_ID,
-        "app_id": APP_ID
-    },
-    "inputs": [
-        {
-            "data": {
-                "image": {
-                    "url": imageURL
-                }
-            }
-        }
-    ]
-  });
-
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Key ' + PAT
-    },
-    body: raw
-  };
-
-  return requestOptions;
-}
-
-
-
 const App = () => {
   /* --- State hooks --- */
   /*
@@ -112,10 +76,26 @@ const App = () => {
     };
     fetchData(); // call the async function
   }, []); // empty dependency array => runs only once (componentDidMount)
-  
 
   /*---Functions---*/
   /*-Utility/Helper functions-*/
+
+  // Helper function to update user entries
+  // PUT request to the backend to update user information. 
+  // body: JSON.stringify({ id: user.id }) means you’re sending your user’s ID as JSON.
+  // Your backend then increments the entries count for that user and replies with the new number.
+  // Helper function to update user entries
+  const updateUserEntries = async (faceCount = 1) => {
+    
+    const countResponse = await fetch('http://localhost:3000/image', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.id, faceCount }) // Send face count to backend
+    });
+
+    const count = await countResponse.json();
+    setUser(prevUser => ({ ...prevUser, entries: count }));
+  };
 
   // Helper function to get regions from Clarifai response
   const getRegionsFromData = (data) => {
@@ -170,41 +150,35 @@ const App = () => {
 
   const setFaceBoxes = setBoxes;
 
+  // Calling Clarifai API
+  const callClarifaiAPI = async (URL) => {
+    try {
+        const response = await fetch('http://localhost:3000/clarifaiAPI', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: URL }), // Changed from URL to url (lowercase)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Backend error response:', errorText);
+          throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        console.error("Error calling Clarifai API:", err);
+        throw err; // re-throw to handle it in the caller
+    }
+  };
+
   const clearUIState = () => {
     // Only update state if there's actually something to clear
     if (message) setMessage('');
     if (image) setImage('');
     if (boxes.length > 0) setBoxes([]);
     if (isLoading) setIsLoading(false);
-  };
-
-  const callClarifaiAPI = async (image) => {
-    const MODEL_ID = 'face-detection';
-    const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
-
-    const response = await fetch(
-      `/api/v2/models/${MODEL_ID}/versions/${MODEL_VERSION_ID}/outputs`,
-      buildClarifaiRequestOptions(image)
-    );
-
-    return await response.json();
-  };
-
-  // Helper function to update user entries
-  // PUT request to the backend to update user information. 
-  // body: JSON.stringify({ id: user.id }) means you’re sending your user’s ID as JSON.
-  // Your backend then increments the entries count for that user and replies with the new number.
-  // Helper function to update user entries
-  const updateUserEntries = async (faceCount = 1) => {
-    
-    const countResponse = await fetch('http://localhost:3000/image', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: user.id, faceCount }) // Send face count to backend
-    });
-
-    const count = await countResponse.json();
-    setUser(prevUser => ({ ...prevUser, entries: count }));
   };
 
 
