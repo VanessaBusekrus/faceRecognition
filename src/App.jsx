@@ -49,6 +49,8 @@ const App = () => {
   const imageRef = useRef(null);
   const lastValidationResult = useRef(null); // Store processed validation result instead of raw data
 
+  const BACKEND_URL = import.meta.env.VITE_API_BACKEND_URL || 'http://localhost:3000';
+
   /* --- useEffect to check backend server connection on component mount --- 
    The arrow function () => { ... } is the callback that runs after the component mounts.
    fetchData is an async function defined inside the useEffect to perform the fetch operation.
@@ -64,7 +66,7 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/');
+        const response = await fetch(`${BACKEND_URL}/`);
         if (!response.ok) {
           console.error(`HTTP error! status: ${response.status}`);
           return; // need to check if this works!!
@@ -86,8 +88,7 @@ const App = () => {
   // Your backend then increments the entries count for that user and replies with the new number.
   // Helper function to update user entries
   const updateUserEntries = async (faceCount = 1) => {
-    
-    const countResponse = await fetch('http://localhost:3000/image', {
+    const countResponse = await fetch(`${BACKEND_URL}/image`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: user.id, faceCount }) // Send face count to backend
@@ -153,7 +154,7 @@ const App = () => {
   // Calling Clarifai API
   const callClarifaiAPI = async (URL) => {
     try {
-        const response = await fetch('http://localhost:3000/clarifaiAPI', {
+        const response = await fetch(`${BACKEND_URL}/clarifaiAPI`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: URL }), // Changed from URL to url (lowercase)

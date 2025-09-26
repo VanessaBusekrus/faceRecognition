@@ -9,7 +9,7 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
 	event.preventDefault(); // prevent page refresh to keep React state intact
   
 	try {
-	  const response = await fetch('http://localhost:3000/signin', {
+	  const response = await fetch(`${BACKEND_URL}/signin`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
