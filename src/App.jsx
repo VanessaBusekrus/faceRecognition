@@ -11,6 +11,7 @@ import SignIn from './components/SignIn/SignIn.jsx';
 import Register from './components/Register/Register.jsx';
 
 import './App.css'
+import { BACKEND_URL } from './config.js';
 
 const App = () => {
   /* --- State hooks --- */
@@ -48,8 +49,6 @@ const App = () => {
 
   const imageRef = useRef(null);
   const lastValidationResult = useRef(null); // Store processed validation result instead of raw data
-
-  const BACKEND_URL = import.meta.env.VITE_API_BACKEND_URL || 'http://localhost:3000';
 
   /* --- useEffect to check backend server connection on component mount --- 
    The arrow function () => { ... } is the callback that runs after the component mounts.
