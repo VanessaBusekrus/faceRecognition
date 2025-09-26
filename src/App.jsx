@@ -12,13 +12,6 @@ import Register from './components/Register/Register.jsx';
 
 import './App.css'
 
-/*Peparing the API request from Clarifai*/
-/*
-  We are sending a POST request to send data to the Clarifai face-detection endpoint (method: 'Post')
-  In headers, we we specify what kinf of data we send and include the API key (Authorization)
-  body: rwa is the actual data we are sending. 
-  Raw is created with a JSON.stringify(), which turn a JavaScript Object into a JSON string -> that JSON describes: who we are (user_id, app_id) and what image Clarifai should analyze.
-*/
 
 const buildClarifaiRequestOptions = (imageURL) => {
   const PAT = import.meta.env.VITE_API_PAT;
@@ -53,6 +46,8 @@ const buildClarifaiRequestOptions = (imageURL) => {
   return requestOptions;
 }
 
+
+
 const App = () => {
   /* --- State hooks --- */
   /*
@@ -62,8 +57,8 @@ const App = () => {
     - useEffect: runs side effects (e.g., API calls) after the component renders.
     
     2. State variables:
-    - input: stores the current value of the image URL input field.
-    - imageURL: stores the URL of the image to be processed/displayed.
+    - inputURL: stores the current value of the image URL input field.
+    - image: stores the URL of the image to be processed/displayed.
     - box: stores the coordinates of the detected face bounding box.
     - route: tracks the current page/view (signIn, register, home).
     - user: stores user information (id, email, name, entries, joined).
@@ -73,8 +68,8 @@ const App = () => {
     - imageRef: a reference to the actual <img> element in the DOM.
     - lastClarifaiData: stores the last response from the Clarifai API.
   */
-  const [input, setInput] = useState('');
-  const [imageURL, setImageURL] = useState('');
+  const [inputURL, setInputURL] = useState('');
+  const [image, setImage] = useState('');
   const [boxes, setBoxes] = useState([]); // Changed from single box to array of boxes
   const [route, setRoute] = useState('signIn');
   const [user, setUser] = useState({
@@ -176,19 +171,20 @@ const App = () => {
   const setFaceBoxes = setBoxes;
 
   const clearUIState = () => {
-    setMessage('');
-    setImageURL('');
-    setBoxes([]);
-    setIsLoading(false);
+    // Only update state if there's actually something to clear
+    if (message) setMessage('');
+    if (image) setImage('');
+    if (boxes.length > 0) setBoxes([]);
+    if (isLoading) setIsLoading(false);
   };
 
-  const callClarifaiAPI = async (imageUrl) => {
+  const callClarifaiAPI = async (image) => {
     const MODEL_ID = 'face-detection';
     const MODEL_VERSION_ID = '6dc7e46bc9124c5c8824be4822abe105';
 
     const response = await fetch(
       `/api/v2/models/${MODEL_ID}/versions/${MODEL_VERSION_ID}/outputs`,
-      buildClarifaiRequestOptions(imageUrl)
+      buildClarifaiRequestOptions(image)
     );
 
     return await response.json();
@@ -232,7 +228,7 @@ const App = () => {
       entries: 0,
       joined: '' });
     clearUIState();
-    setInput('');
+    setInputURL('');
   }
 
   const handleRouteChange = (newRoute) => {
@@ -246,7 +242,7 @@ const App = () => {
     }
   }; 
   
-  const handleInputChange = (event) => setInput(event.target.value);
+  const handleInputChange = (event) => setInputURL(event.target.value);
 
   const handleImageLoad = () => {
     if (lastValidationResult.current) {
@@ -258,12 +254,14 @@ const App = () => {
   }
 
   const handleImageSubmit = async () => {
-    clearUIState();
+    if (message || image || boxes.length > 0 || isLoading) {
+      clearUIState();
+    }
     setIsLoading(true);
-    setMessage('🔍 Analyzing image...');
-
+    setMessage('🔍 Analyzing image...');    
+    
     try {
-      const data = await callClarifaiAPI(input);
+      const data = await callClarifaiAPI(inputURL);
 
       // Validate face detection once and store the result
       const validationResult = validateFaceDetection(data);
@@ -278,10 +276,10 @@ const App = () => {
 
       const { faceCount } = validationResult;
       setMessage(`Number of faces detected: ${faceCount}`);
-      setImageURL(input);
+      setImage(inputURL);
 
       updateUserEntries(faceCount);
-      setInput(''); 
+      setInputURL(''); 
       setIsLoading(false);
 
     } catch (err) {
@@ -311,7 +309,7 @@ const App = () => {
           handleInputChange={handleInputChange} 
           handleImageSubmit={handleImageSubmit}
           isLoading={isLoading}
-          input={input}
+          input={inputURL}
         />
         {message && (
           <div className={`f6 mv3 ${messageColor}`}>
@@ -320,7 +318,7 @@ const App = () => {
         )}
         <FaceRecognition
           boxes={boxes}
-          imageURL={imageURL}
+          image={image}
           handleImageLoad={handleImageLoad}
           imageRef={imageRef} 
         />

@@ -1,14 +1,14 @@
 import './FaceRecognition.css';
 
-const FaceRecognition = ({ imageURL, boxes, handleImageLoad, imageRef }) => {	
+const FaceRecognition = ({ image, boxes, handleImageLoad, imageRef }) => {	
 	return (
 		<div className="center ma">
 			<div className="absolute mt2">
-				{imageURL && (
+				{image && (
 				<img 
 					id="inputImage" 
 					ref={imageRef}
-					src={imageURL} 
+					src={image} 
 					alt="uploaded image" 
 					width="500px" 
 					height="auto"
