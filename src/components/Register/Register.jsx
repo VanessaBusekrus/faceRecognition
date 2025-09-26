@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BACKEND_URL } from '../../App.jsx';
 
 const Register = ({ handleRouteChange, handleSignIn }) => {
 	// useState hooks for form fields
