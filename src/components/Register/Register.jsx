@@ -6,10 +6,44 @@ const Register = ({ handleRouteChange, handleSignIn }) => {
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+
+	// Password validation function (matching your backend logic)
+	const validatePassword = (password) => {
+		const rules = {
+			minLength: password.length >= 8,
+			hasUppercase: /[A-Z]/.test(password),
+			hasLowercase: /[a-z]/.test(password),
+			hasNumber: /\d/.test(password),
+			hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+		};
+
+		const errors = [];
+		if (!rules.minLength) errors.push('at least 8 characters');
+		if (!rules.hasUppercase) errors.push('at least one uppercase letter');
+		if (!rules.hasLowercase) errors.push('at least one lowercase letter');
+		if (!rules.hasNumber) errors.push('at least one number');
+		if (!rules.hasSpecialChar) errors.push('at least one special character (!@#$%^&*(),.?":{}|<>)');
+
+		return {
+			isValid: errors.length === 0,
+			errors: errors,
+			rules: rules
+		};
+	};
+
+	// Get current password validation status
+	const passwordValidation = validatePassword(password);
 
 	const handleSubmit = async (event) => {
 		event.preventDefault(); // prevent page refresh
 	  
+		// Check password validation before submitting
+		if (!passwordValidation.isValid) {
+			alert('Password must contain ' + passwordValidation.errors.join(', '));
+			return;
+		}
+
 		try {
 			const response = await fetch(`${BACKEND_URL}/register`, {
 				method: 'POST',
@@ -34,9 +68,9 @@ const Register = ({ handleRouteChange, handleSignIn }) => {
 					alert('Registration error. Please try again.');
 				}
 			} else {
-				// Registration failed - show generic error message (don't reveal if user exists)
+				// Registration failed - show the specific error message from backend
 				console.error('Registration failed:', data);
-				alert('Registration failed. Please check your information and try again.');
+				alert(data.message || 'Registration failed. Please check your information and try again.');
 			}
 		} catch (err) {
 		  console.error("Error registering:", err);
@@ -84,14 +118,44 @@ const Register = ({ handleRouteChange, handleSignIn }) => {
 								id="password" 
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
+								onFocus={() => setShowPasswordRequirements(true)}
+								onBlur={() => setShowPasswordRequirements(false)}
 								required
 							/>
+							{/* Password requirements display */}
+							{(showPasswordRequirements || password.length > 0) && (
+								<div className="mt2 f6">
+									<p className="ma0 mb1 gray">Password must contain:</p>
+									<ul className="ma0 pl3 list">
+										<li className={passwordValidation.rules.minLength ? 'green' : 'red'}>
+											{passwordValidation.rules.minLength ? '✓' : '✗'} At least 8 characters
+										</li>
+										<li className={passwordValidation.rules.hasUppercase ? 'green' : 'red'}>
+											{passwordValidation.rules.hasUppercase ? '✓' : '✗'} One uppercase letter (A-Z)
+										</li>
+										<li className={passwordValidation.rules.hasLowercase ? 'green' : 'red'}>
+											{passwordValidation.rules.hasLowercase ? '✓' : '✗'} One lowercase letter (a-z)
+										</li>
+										<li className={passwordValidation.rules.hasNumber ? 'green' : 'red'}>
+											{passwordValidation.rules.hasNumber ? '✓' : '✗'} One number (0-9)
+										</li>
+										<li className={passwordValidation.rules.hasSpecialChar ? 'green' : 'red'}>
+											{passwordValidation.rules.hasSpecialChar ? '✓' : '✗'} One special character (!@#$%^&*(),.?":{}|&lt;&gt;)
+										</li>
+									</ul>
+								</div>
+							)}
 						</div>
 						</fieldset>
 						<div className="">
 						<button
 							type="submit"
-							className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
+							className={`b ph3 pv2 input-reset ba b--black grow pointer f6 dib ${
+								!passwordValidation.isValid || !name || !email 
+									? 'bg-light-gray gray cursor-not-allowed' 
+									: 'bg-transparent hover-bg-black hover-white'
+							}`}
+							disabled={!passwordValidation.isValid || !name || !email}
 						>
 							Register
 						</button>
