@@ -24,6 +24,8 @@ const ImageLinkForm = ({ handleInputChange, handleImageSubmit, isLoading, input 
 					<input 
 						className="f4 pa2 w-70" 
 						type="text" 
+						id="image-url-input"
+						name="imageUrl"
 						value={input}
 						onChange={handleInputChange}
 						placeholder="Enter image URL..."

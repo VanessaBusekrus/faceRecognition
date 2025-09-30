@@ -11,7 +11,8 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
 	event.preventDefault(); // prevent page refresh to keep React state intact
   
 	try {
-	  const response = await fetch(`${BACKEND_URL}/signin`, {
+	  // const response = await fetch(`${BACKEND_URL}/signin`, {
+    const response = await fetch(`http://localhost:3000/signin`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
@@ -21,14 +22,15 @@ const SignIn = ({ handleRouteChange, handleSignIn }) => {
 	  });
   
 	  const data = await response.json();
-  
+    
 	  // Check if the HTTP request was successful (= server received my request and processed it successfully)
 	  if (response.ok) {
-		// Sign in successful - we should have valid user data
+		// Sign in successful - we should have valid user data. Not including entries data check here because it can be 0 (e.g. for new users), which would mean "false" in JavaScript
 		if (data.id && data.name && data.email) {
 		  handleSignIn(data);
 		  handleRouteChange('home');
 		} else {
+      // This could happen in case of unexpected backend response structure or missing fields, e.g., if the database schema changed but the backend code wasn't updated. E.g., if the ID cannot be retrieved or the name
 		  console.error('Sign in succeeded but invalid user data received:', data);
 		  alert('Sign in error. Please try again.');
 		}
