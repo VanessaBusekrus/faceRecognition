@@ -218,7 +218,7 @@ const App = () => {
     }
   }; 
   
-  const handleInputChange = (event) => setInputURL(event.target.value);
+  const handleInputChange = (event) => setInputURL(event.target.value.trim());
 
   const handleImageLoad = () => {
     if (lastValidationResult.current) {
