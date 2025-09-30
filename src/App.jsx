@@ -14,7 +14,7 @@ import './App.css'
 import { BACKEND_URL } from './config.js';
 
 const App = () => {
-  /* --- State hooks --- */
+  /*--------------State hooks, References and Side Effects--------------*/
   /*
     1. React Hooks:
     - useState: lets you declare state variables (e.g. input, user, box).
@@ -28,6 +28,7 @@ const App = () => {
     - route: tracks the current page/view (signIn, register, home).
     - user: stores user information (id, email, name, entries, joined).
     - message: stores error or status messages to display to the user.
+    - isLoading: indicates if an API call is in progress to manage UI state (e.g., disable buttons).
   
     3. Refs:
     - imageRef: a reference to the actual <img> element in the DOM.
@@ -35,7 +36,7 @@ const App = () => {
   */
   const [inputURL, setInputURL] = useState('');
   const [image, setImage] = useState('');
-  const [boxes, setBoxes] = useState([]); // Changed from single box to array of boxes
+  const [boxes, setBoxes] = useState([]);
   const [route, setRoute] = useState('signIn');
   const [user, setUser] = useState({
       id: '', 
@@ -47,39 +48,33 @@ const App = () => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // useRef ('use' is hook naming convention). Reference is like a pointer or address that points to a location in memory where the data is stored.
   const imageRef = useRef(null);
   const lastValidationResult = useRef(null); // Store processed validation result instead of raw data
 
-  /* --- useEffect to check backend server connection on component mount --- 
-   The arrow function () => { ... } is the callback that runs after the component mounts.
-   fetchData is an async function defined inside the useEffect to perform the fetch operation.
-
-  1. React calls your useEffect callback when component mounts
-  2. Your useEffect callback creates the fetchData function
-  3. Your useEffect callback then calls fetchData()
-  4. fetchData executes and makes the fetch request
-
-  - useEffect callback: () => { const fetchData = ...; fetchData(); }
-  - fetchData: Just a regular function you created inside that callback
-  */
+  /*--- Side Effects (e.g., API calls to fetch data from servers) ---*/
+  // useEffect to check backend server connection on component mount - after initial render
+  // useEffect runs once when the component mount (empty dependency array [])
   useEffect(() => {
+    // fetchData is an async function that tries to connect to the backend server
     const fetchData = async () => {
       try {
+        // making a GET request to the backend root URL to check if it's reachable
         const response = await fetch(`${BACKEND_URL}/`);
         if (!response.ok) {
           console.error(`HTTP error! status: ${response.status}`);
           return; // need to check if this works!!
         }
-        const data = await response.json(); // parse JSON
       } catch (err) {
         console.error('Error connecting to backend server:', err);
       }
     };
     fetchData(); // call the async function
-  }, []); // empty dependency array => runs only once (componentDidMount)
+  }, []); // empty dependency array => runs only once (componentDidMount equivalent)
 
-  /*---Functions---*/
-  /*-Utility/Helper functions-*/
+
+  /*--------------Functions--------------*/
+  /*--------------Utility/Helper functions--------------*/
 
   // Helper function to update user entries
   // PUT request to the backend to update user information. 
@@ -90,11 +85,14 @@ const App = () => {
     const countResponse = await fetch(`${BACKEND_URL}/image`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: user.id, faceCount }) // Send face count to backend
+      body: JSON.stringify({ id: user.id, faceCount }) 
     });
 
     const count = await countResponse.json();
-    setUser(prevUser => ({ ...prevUser, entries: count }));
+    // setting the user state with the updated entries count. prevUser() is the previous state and we use the spread operator (...) 
+    // to copy all existing user properties and overwrite only the 'entries' property with the new count
+    // Why do it this way? Because React state updates need to create a new object reference to trigger re-renders. You cannot just mutate the existing user object directly.
+    setUser(prevUser => ({ ...prevUser, entries: count })); 
   };
 
   // Helper function to get regions from Clarifai response
@@ -121,7 +119,7 @@ const App = () => {
     
     // Check if we have valid regions with detected faces
     if (regions) {
-      return { regions, faceCount: regions.length }; // Return both regions and count
+      return { regions, faceCount: regions.length }; // Return both regions array and count
     }
     
     return null;
@@ -132,12 +130,16 @@ const App = () => {
       return [];
     }
 
-    const image = imageRef.current;
+    const image = imageRef.current; // Getting the contents here of the ref object that points to the actual <img> element. Storing the the DOM element in a variable for easier access.
     const width = Number(image.width);
     const height = Number(image.height);
     
+    // Map over each region to calculate bounding box coordinates
+    // 'regions' is an array of detected face regions from Clarifai API response
+    // 'region' = data for one specific face
+    // 'index' = current index in the array (0, 1, 2, ...)
     return regions.map((region, index) => {
-      const boundingBox = region.region_info.bounding_box;
+      const boundingBox = region.region_info.bounding_box; // Bounding box contains the relative coordinates (percentages) of the face within the image
       return {
         id: index, // Add unique identifier for each face
         leftCol: boundingBox.left_col * width,
@@ -156,20 +158,20 @@ const App = () => {
         const response = await fetch(`${BACKEND_URL}/clarifaiAPI`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: URL }), // Changed from URL to url (lowercase)
+          body: JSON.stringify({ url: URL }),
         });
         
+        // in case of HTTP error response from backend
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Backend error response:', errorText);
-          throw new Error(`Backend error: ${response.status} - ${errorText}`);
+          const errorText = await response.text(); // Get error details from server. Convert the response body to text
+          throw new Error(`Backend error: ${response.status} - ${errorText}`); // E.g., "Backend error: 500 - Internal Server Error"
         }
-        
         const data = await response.json();
         return data;
     } catch (err) {
-        console.error("Error calling Clarifai API:", err);
-        throw err; // re-throw to handle it in the caller
+      // in case of network error or server down
+        console.error("Error calling Clarifai API:", err); // Log the error here
+        throw err; // Re-throw so 'handleImageSubmit' (the caller) also catches it
     }
   };
 
@@ -182,7 +184,7 @@ const App = () => {
   };
 
 
-  /*-Event Handlers-*/
+  /*--------------Event Handlers--------------*/
   const handleSignIn = (data) => {
     setUser({
       id: data.id,
@@ -202,7 +204,7 @@ const App = () => {
       entries: 0,
       joined: '' });
     clearUIState();
-    setInputURL('');
+    if (inputURL) setInputURL('');
   }
 
   const handleRouteChange = (newRoute) => {
@@ -246,7 +248,7 @@ const App = () => {
       }
 
       // Store the validation result for later use in handleImageLoad
-      lastValidationResult.current = validationResult;
+      lastValidationResult.current = validationResult; // '.current' holds the actual value
 
       const { faceCount } = validationResult;
       setMessage(`Number of faces detected: ${faceCount}`);
@@ -263,7 +265,7 @@ const App = () => {
     }
   };
 
-  /*-Render logic-*/
+  /*--------------Render logic--------------*/
   let page;
 
   if (route === 'signIn') {
@@ -314,3 +316,46 @@ const App = () => {
 }
 
 export default App
+
+
+
+/*--- Notes ---*/
+
+/*
+// Timeline:
+1. User submits URL                    // ← handleImageSubmit runs
+2. Call Clarifai API                   // ← Get face data
+3. Validate face data                  // ← Process the data  
+4. Store validation result             // ← This line saves it
+5. Set image URL                       // ← setImage(inputURL)
+6. Image starts loading in browser     // ← <img src={image} />
+7. Image finishes loading              // ← handleImageLoad runs
+8. Draw face boxes                     // ← Use stored data
+*/
+
+/*
+// The face detection workflow:
+1. Submit URL                    // User action
+2. Call API                      // Network request  
+3. Store result in ref           // ← No re-render (good!)
+4. Set image URL                 // ← Triggers re-render (needed!)
+5. Image loads                   // DOM event
+6. Use ref data to draw boxes    // ← Access stored data
+*/
+
+/* useRef explained:
+const myRef = useRef("initial");
+
+console.log(myRef);         // { current: "initial" }
+console.log(myRef.current); // "initial"
+
+----
+
+console.log(imageRef.current);  
+// Output: <img src="https://example.com/photo.jpg" width="500" height="300">
+
+const image = imageRef.current;
+console.log(image.width);       // 500
+console.log(image.height);      // 300
+console.log(image.src);         // "https://example.com/photo.jpg"
+*/
