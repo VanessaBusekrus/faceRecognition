@@ -2,13 +2,16 @@
 import ParticlesBg from 'particles-bg';
 import { useState, useRef, useEffect } from 'react';
 
+import Register from './components/Register/Register.jsx';
+import SignIn from './components/SignIn/SignIn.jsx';
+import TwoFactorVerify from './components/TwoFactorAuth/TwoFactorVerify.jsx';
 import Navigation from './components/Navigation/Navigation.jsx';
 import Logo from './components/Logo/Logo.jsx';
 import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm.jsx';
 import Rank from './components/Rank/Rank.jsx';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition.jsx';
-import SignIn from './components/SignIn/SignIn.jsx';
-import Register from './components/Register/Register.jsx';
+import Settings from './components/Settings/Settings.jsx';
+import TwoFactorSetup from './components/TwoFactorAuth/TwoFactorSetup.jsx';
 
 import './App.css'
 import { BACKEND_URL } from './config.js';
@@ -43,10 +46,17 @@ const App = () => {
       email: '', 
       name: '',
       entries: 0,
-      joined: ''
+      joined: '',
+      two_factor_enabled: false
     });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 2FA states
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
 
   // useRef ('use' is hook naming convention). Reference is like a pointer or address that points to a location in memory where the data is stored.
   const imageRef = useRef(null);
@@ -191,8 +201,70 @@ const App = () => {
       email: data.email,
       name: data.name,
       entries: data.entries,
-      joined: data.joined
+      joined: data.joined,
+      two_factor_enabled: data.two_factor_enabled
     });
+    console.log('User signed in:', data); // ‼️ Debug log
+  }
+
+  const handleTwoFactorRequired = (userId) => {
+    // console.log('Handling 2FA requirement for user ID:', userId); // ‼️ Debug log
+    setPendingUserId(userId);
+    // console.log('Pending user ID set to:', userId); // ‼️ Debug log
+    setShowTwoFactor(true);
+  }
+
+  const handleTwoFactorSubmit = async () => {
+    if (!twoFactorCode || twoFactorCode.length !== 6) {
+      alert('Please enter a valid 6-digit code');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/verify-2fa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userID: pendingUserId,
+          code: twoFactorCode
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 2FA verification successful
+        handleSignIn(data.user);
+        handleRouteChange('home');
+        // Reset 2FA states
+        setShowTwoFactor(false);
+        setPendingUserId(null);
+        setTwoFactorCode('');
+      } else {
+        alert(data.message || 'Invalid 2FA code. Please try again.');
+        setTwoFactorCode(''); // Clear the code for retry
+      }
+    } catch (err) {
+      console.error("Error verifying 2FA:", err);
+      alert('Error verifying 2FA. Please try again.');
+    }
+  }
+
+  const handleTwoFactorCancel = () => {
+    setShowTwoFactor(false);
+    setPendingUserId(null);
+    setTwoFactorCode('');
+  }
+
+  const handleTwoFactorSetupComplete = () => {
+    setShowTwoFactorSetup(false);
+    alert('2FA has been successfully enabled for your account!');
+    handleRouteChange('home');
+    // Optionally refresh user data to reflect 2FA status
+  }
+
+  const handleTwoFactorSetupCancel = () => {
+    setShowTwoFactorSetup(false);
   }
 
   const handleSignOut = () => {
@@ -202,7 +274,9 @@ const App = () => {
       email: '', 
       name: '', 
       entries: 0,
-      joined: '' });
+      joined: '',
+      two_factor_enabled: false
+    });
     clearUIState();
     if (inputURL) setInputURL('');
   }
@@ -213,6 +287,8 @@ const App = () => {
       setRoute('signIn');
     } else if (newRoute === 'home') {
       setRoute('home');
+    } else if (newRoute === 'settings') {
+      setRoute('settings');
     } else {
       setRoute(newRoute);
     }
@@ -230,7 +306,7 @@ const App = () => {
   }
 
   const handleImageSubmit = async () => {
-    if (message || image || boxes.length > 0 || isLoading) {
+    if (message || image || boxes.length > 0) { // removed isLoading check ( || isLoading )
       clearUIState();
     }
     setIsLoading(true);
@@ -268,10 +344,39 @@ const App = () => {
   /*--------------Render logic--------------*/
   let page;
 
-  if (route === 'signIn') {
-    page = <SignIn handleSignIn={handleSignIn} handleRouteChange={handleRouteChange} />;
+  if (showTwoFactorSetup) {
+    // 2FA Setup page
+    page = (
+      <TwoFactorSetup
+        user={user}
+        handleTwoFactorSetupComplete={handleTwoFactorSetupComplete}
+        handleTwoFactorSetupCancel={handleTwoFactorSetupCancel}
+      />
+    );
+  } else if (showTwoFactor) {
+    // 2FA verification page
+    page = (
+      <TwoFactorVerify
+        twoFactorCode={twoFactorCode}
+        setTwoFactorCode={setTwoFactorCode}
+        handleTwoFactorSubmit={handleTwoFactorSubmit}
+        handleTwoFactorCancel={handleTwoFactorCancel}
+      />
+    );
+  } else if (route === 'signIn') {
+    page = <SignIn 
+      handleSignIn={handleSignIn} 
+      handleRouteChange={handleRouteChange}
+      handleTwoFactorRequired={handleTwoFactorRequired}
+    />;
   } else if (route === 'register') {
     page = <Register handleSignIn={handleSignIn} handleRouteChange={handleRouteChange} />;
+  } else if (route === 'settings') {
+    page = <Settings 
+      setShowTwoFactorSetup={() => setShowTwoFactorSetup(true)}
+      handleRouteChange={() => handleRouteChange('home')}
+      user2FAEnabled={user.two_factor_enabled}
+    />;
   } else if (route === 'home') {
     let messageColor = 'red';
     if (isLoading) {

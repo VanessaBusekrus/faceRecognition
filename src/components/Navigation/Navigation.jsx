@@ -18,12 +18,36 @@ const Navigation = ({ route, handleRouteChange }) => {
 		  </p>
 		)}
 		{route === 'home' && (
-		  <p
-			onClick={() => handleRouteChange('signOut')}
-			className="f3 link dim black underline pa3 pointer"
-		  >
-			Sign Out
-		  </p>
+		  <>
+			<p
+			  onClick={() => handleRouteChange('settings')}
+			  className="f3 link dim black underline pa3 pointer"
+			>
+			  Settings
+			</p>
+			<p
+			  onClick={() => handleRouteChange('signOut')}
+			  className="f3 link dim black underline pa3 pointer"
+			>
+			  Sign Out
+			</p>
+		  </>
+		)}
+		{route === 'settings' && (
+		  <>
+			<p
+			  onClick={() => handleRouteChange('home')}
+			  className="f3 link dim black underline pa3 pointer"
+			>
+			  Home
+			</p>
+			<p
+			  onClick={() => handleRouteChange('signOut')}
+			  className="f3 link dim black underline pa3 pointer"
+			>
+			  Sign Out
+			</p>
+		  </>
 		)}
 	  </nav>
 	);
