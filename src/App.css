@@ -6,3 +6,29 @@
   display: flex;
   justify-content: center;
 }
+
+/* For the <article> elements in SignIn, Register and TwoFactorVerify */
+article {
+	background: rgba(251, 187, 17, 0.1); /* Very subtle golden wash */
+	backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px); /* Safari support */
+}
+
+/* For the divs in settings */
+.glass {
+  background: rgba(251, 187, 17, 0.1); /* subtle golden wash */
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px); /* Safari/iOS support */
+  border-radius: 0.75rem; /* matches br3 */
+}
+
+/* Force vertical stacking for 2FA settings and 2FA Setup */
+.stack-vertical {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.stack-vertical > * {
+  display: block !important;
+  width: 100% !important;
+}

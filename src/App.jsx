@@ -204,13 +204,10 @@ const App = () => {
       joined: data.joined,
       two_factor_enabled: data.two_factor_enabled
     });
-    console.log('User signed in:', data); // ‼️ Debug log
   }
 
   const handleTwoFactorRequired = (userId) => {
-    // console.log('Handling 2FA requirement for user ID:', userId); // ‼️ Debug log
     setPendingUserId(userId);
-    // console.log('Pending user ID set to:', userId); // ‼️ Debug log
     setShowTwoFactor(true);
   }
 
@@ -257,10 +254,14 @@ const App = () => {
   }
 
   const handleTwoFactorSetupComplete = () => {
+    // Optionally refresh user data to reflect 2FA status
+    setUser(prev => ({
+      ...prev,
+      two_factor_enabled: true
+    }));
     setShowTwoFactorSetup(false);
     alert('2FA has been successfully enabled for your account!');
     handleRouteChange('home');
-    // Optionally refresh user data to reflect 2FA status
   }
 
   const handleTwoFactorSetupCancel = () => {

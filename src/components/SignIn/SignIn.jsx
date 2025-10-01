@@ -23,10 +23,8 @@ const SignIn = ({ handleRouteChange, handleSignIn, handleTwoFactorRequired }) =>
 	  const data = await response.json();
     // Check if the HTTP request was successful (= server received my request and processed it successfully)
     if (response.ok) {
-      // console.log('Sign in response data:', data); // ‼️ Debug log
       // Check if 2FA is required
       if (data.requiresTwoFactor) {
-        // console.log('2FA required for user ID:', data.userID); // ‼️ Debug log
         handleTwoFactorRequired(data.userID);
         return;
       }
