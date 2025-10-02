@@ -68,7 +68,10 @@ CREATE TABLE users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
   entries BIGINT DEFAULT 0,
-  joined TIMESTAMP DEFAULT now()
+  joined TIMESTAMP DEFAULT now(),
+  two_factor_secret VARCHAR(255),
+  two_factor_enabled BOOLEAN DEFAULT FALSE,
+  temp_two_factor_secret VARCHAR(255)
 );
 
 -- Login table
