@@ -53,10 +53,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // 2FA states
-  const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [pendingUserId, setPendingUserId] = useState(null);
-  const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
 
   // useRef ('use' is hook naming convention). Reference is like a pointer or address that points to a location in memory where the data is stored.
   const imageRef = useRef(null);
@@ -208,64 +205,28 @@ const App = () => {
 
   const handleTwoFactorRequired = (userId) => {
     setPendingUserId(userId);
-    setShowTwoFactor(true);
+    handleRouteChange('2fa-verify');
   }
 
-  const handleTwoFactorSubmit = async () => {
-    if (!twoFactorCode || twoFactorCode.length !== 6) {
-      alert('Please enter a valid 6-digit code');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/verify-2fa`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userID: pendingUserId,
-          code: twoFactorCode
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // 2FA verification successful
-        handleSignIn(data.user);
-        handleRouteChange('home');
-        // Reset 2FA states
-        setShowTwoFactor(false);
-        setPendingUserId(null);
-        setTwoFactorCode('');
-      } else {
-        alert(data.message || 'Invalid 2FA code. Please try again.');
-        setTwoFactorCode(''); // Clear the code for retry
-      }
-    } catch (err) {
-      console.error("Error verifying 2FA:", err);
-      alert('Error verifying 2FA. Please try again.');
-    }
-  }
-
-  const handleTwoFactorCancel = () => {
-    setShowTwoFactor(false);
+  const handleTwoFactorVerificationSuccess = (userData) => {
+    handleSignIn(userData);
     setPendingUserId(null);
-    setTwoFactorCode('');
+    handleRouteChange('home');
+  }
+
+  const handleTwoFactorVerificationCancel = () => {
+    setPendingUserId(null);
+    handleRouteChange('signIn');
   }
 
   const handleTwoFactorSetupComplete = () => {
-    // Optionally refresh user data to reflect 2FA status
+    // Update user state to set 2FA as enabled
     setUser(prev => ({
       ...prev,
       two_factor_enabled: true
     }));
-    setShowTwoFactorSetup(false);
     alert('2FA has been successfully enabled for your account!');
     handleRouteChange('home');
-  }
-
-  const handleTwoFactorSetupCancel = () => {
-    setShowTwoFactorSetup(false);
   }
 
   const handleSignOut = () => {
@@ -283,6 +244,11 @@ const App = () => {
   }
 
   const handleRouteChange = (newRoute) => {
+    // Clear 2FA state when navigating away from 2FA verification during Sign in 
+    if (route === '2fa-verify' && newRoute !== '2fa-verify') {
+      setPendingUserId(null);
+    }
+    
     if (newRoute === 'signOut') {
       handleSignOut();
       setRoute('signIn');
@@ -290,6 +256,10 @@ const App = () => {
       setRoute('home');
     } else if (newRoute === 'settings') {
       setRoute('settings');
+    } else if (newRoute === '2fa-setup') {
+      setRoute('2fa-setup');
+    } else if (newRoute === '2fa-verify') {
+      setRoute('2fa-verify');
     } else {
       setRoute(newRoute);
     }
@@ -345,26 +315,7 @@ const App = () => {
   /*--------------Render logic--------------*/
   let page;
 
-  if (showTwoFactorSetup) {
-    // 2FA Setup page
-    page = (
-      <TwoFactorSetup
-        user={user}
-        handleTwoFactorSetupComplete={handleTwoFactorSetupComplete}
-        handleTwoFactorSetupCancel={handleTwoFactorSetupCancel}
-      />
-    );
-  } else if (showTwoFactor) {
-    // 2FA verification page
-    page = (
-      <TwoFactorVerify
-        twoFactorCode={twoFactorCode}
-        setTwoFactorCode={setTwoFactorCode}
-        handleTwoFactorSubmit={handleTwoFactorSubmit}
-        handleTwoFactorCancel={handleTwoFactorCancel}
-      />
-    );
-  } else if (route === 'signIn') {
+  if (route === 'signIn') {
     page = <SignIn 
       handleSignIn={handleSignIn} 
       handleRouteChange={handleRouteChange}
@@ -374,11 +325,24 @@ const App = () => {
     page = <Register handleSignIn={handleSignIn} handleRouteChange={handleRouteChange} />;
   } else if (route === 'settings') {
     page = <Settings 
-      setShowTwoFactorSetup={() => setShowTwoFactorSetup(true)}
-      handleRouteChange={() => handleRouteChange('home')}
+      handleRouteChangeHome={() => handleRouteChange('home')}
+      handleRouteChange2FASetup={() => handleRouteChange('2fa-setup')}
       user2FAEnabled={user.two_factor_enabled}
     />;
-  } else if (route === 'home') {
+  } else if (route === '2fa-setup') {
+    page = <TwoFactorSetup
+        user={user}
+        handleTwoFactorSetupComplete={handleTwoFactorSetupComplete}
+        handleRouteChangeSettings={() => handleRouteChange('settings')}
+      />;
+  } else if (route === '2fa-verify') {
+    page = <TwoFactorVerify
+      pendingUserId={pendingUserId}
+      onVerificationSuccess={handleTwoFactorVerificationSuccess}
+      onCancel={handleTwoFactorVerificationCancel}
+    />;
+  }
+  else if (route === 'home') {
     let messageColor = 'red';
     if (isLoading) {
       messageColor = 'blue';

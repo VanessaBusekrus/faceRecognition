@@ -6,48 +6,51 @@ const SignIn = ({ handleRouteChange, handleSignIn, handleTwoFactorRequired }) =>
 	// useState hooks for form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event) => {
-	event.preventDefault(); // prevent page refresh to keep React state intact
-  
-	try {
-	  const response = await fetch(`${BACKEND_URL}/signin`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-		  email,
-		  password
-		})
-	  });
-  
-	  const data = await response.json();
-    // Check if the HTTP request was successful (= server received my request and processed it successfully)
-    if (response.ok) {
-      // Check if 2FA is required
-      if (data.requiresTwoFactor) {
-        handleTwoFactorRequired(data.userID);
-        return;
-      }
-		
-      // Sign in successful - we should have valid user data. Not including entries data check here because it can be 0 (e.g. for new users), which would mean "false" in JavaScript
-      if (data.id && data.name && data.email) {
-        handleSignIn(data);
-        handleRouteChange('home');
+    event.preventDefault(); // prevent page refresh to keep React state intact
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/signin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password
+      })
+      });
+    
+      const data = await response.json();
+      // Check if the HTTP request was successful (= server received my request and processed it successfully)
+      if (response.ok) {
+        // Check if 2FA is required
+        if (data.requiresTwoFactor) {
+          handleTwoFactorRequired(data.userID);
+          return;
+        }
+      
+        // Sign in successful - we should have valid user data. Not including entries data check here because it can be 0 (e.g. for new users), which would mean "false" in JavaScript
+        if (data.id && data.name && data.email) {
+          handleSignIn(data);
+          handleRouteChange('home');
+        } else {
+          // This could happen in case of unexpected backend response structure or missing fields, e.g., if the database schema changed but the backend code wasn't updated. E.g., if the ID cannot be retrieved or the name
+          console.error('Sign in succeeded but invalid user data received:', data);
+          alert('Sign in error. Please try again.');
+        }
       } else {
-        // This could happen in case of unexpected backend response structure or missing fields, e.g., if the database schema changed but the backend code wasn't updated. E.g., if the ID cannot be retrieved or the name
-        console.error('Sign in succeeded but invalid user data received:', data);
-        alert('Sign in error. Please try again.');
+        // Sign in failed - show generic error message (don't reveal if user exists)
+        console.error('Sign in failed:', data);
+        alert('Invalid email or password. Please try again.');
       }
-	  } else {
-      // Sign in failed - show generic error message (don't reveal if user exists)
-      console.error('Sign in failed:', data);
-      alert('Invalid email or password. Please try again.');
-	  }
-    } catch (err) {
-      // Handles network or other unexpected errors that prevent the fetch from completing
-      console.error("Error signing in:", err);
-      alert('Sign in error. Please check your connection and try again.');
-    }
+      } catch (err) {
+        // Handles network or other unexpected errors that prevent the fetch from completing
+        console.error("Error signing in:", err);
+        alert('Sign in error. Please check your connection and try again.');
+      }
+      setIsLoading(false);
   };
 
   return (
@@ -87,7 +90,7 @@ const SignIn = ({ handleRouteChange, handleSignIn, handleTwoFactorRequired }) =>
                 type="submit"
                 className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
               >
-                Sign in
+                {isLoading ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
           </form>

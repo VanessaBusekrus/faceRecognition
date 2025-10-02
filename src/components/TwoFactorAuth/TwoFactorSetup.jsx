@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BACKEND_URL } from '../../config.js';
 
-const TwoFactorSetup = ({ user, handleTwoFactorSetupComplete, handleTwoFactorSetupCancel }) => {
+const TwoFactorSetup = ({ user, handleTwoFactorSetupComplete,handleRouteChangeSettings }) => {
   const [step, setStep] = useState(1); // 1: Generate QR, 2: Verify setup
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [manualEntry, setManualEntry] = useState('');
@@ -82,12 +82,12 @@ const TwoFactorSetup = ({ user, handleTwoFactorSetupComplete, handleTwoFactorSet
                 <div className="mt4">
                   <button
                     onClick={generateQRCode}
-                    className="b ph3 pv2 input-reset ba b--black bg-light-purple grow pointer f6 dib mr2"
+                    className="b ph3 pv2 input-reset ba b--black bg-transparent hover-bg-black hover-white grow pointer f6 dib mr2"
                   >
                     Setup 2FA
                   </button>
                   <button
-                    onClick={handleTwoFactorSetupCancel}
+                    onClick={handleRouteChangeSettings}
                     className="ph3 pv2 input-reset ba b--gray bg-transparent grow pointer f6 dib"
                   >
                     Cancel
@@ -116,38 +116,49 @@ const TwoFactorSetup = ({ user, handleTwoFactorSetupComplete, handleTwoFactorSet
                   </div>
                 </details>
                 
-                <div className="mt3">
-                  <label className="db fw6 lh-copy f6" htmlFor="verification-code">
-                    Enter the 6-digit code from your app
-                  </label>
-                  <input
-                    className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100 tc f3"
-                    type="text"
-                    id="verification-code"
-                    maxLength="6"
-                    placeholder="000000"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                    autoComplete="one-time-code"
-                  />
-                </div>
-                
-                <div className="mt3">
-                  <button
-                    onClick={verifySetup}
-                    className={`b ph3 pv2 input-reset ba b--black grow pointer f6 dib mr2 
-                      ${verificationCode.length === 6 && !isLoading ? 'bg-light-purple text-black' : 'bg-transparent text-gray-500 cursor-not-allowed'}`}
-                    disabled={verificationCode.length !== 6 || isLoading}
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify & Enable'}
-                </button>
-                  <button
-                    onClick={handleTwoFactorSetupCancel}
-                    className="ph3 pv2 input-reset ba b--gray bg-transparent grow pointer f6 dib"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                <form
+                  className="mt3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (verificationCode.length === 6 && !isLoading) verifySetup();
+                  }}
+                >
+                  <div className="mt3">
+                    <label className="db fw6 lh-copy f6" htmlFor="verification-code">
+                      Enter the 6-digit code from your app
+                    </label>
+                    <input
+                      className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100 tc f3"
+                      type="text"
+                      id="verification-code"
+                      maxLength="6"
+                      placeholder="000000"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                      // autoComplete="one-time-code"
+                      autoFocus
+                      style={{ width: "9ch" }}
+                    />
+                  </div>
+
+                  <div className="mt3">
+                    <button
+                      type="submit"
+                      className={`b ph3 pv2 input-reset ba b--black grow pointer f6 dib mr2 
+                        ${verificationCode.length === 6 && !isLoading ? 'bg-transparent hover-bg-black hover-white text-black' : 'bg-transparent text-gray-500 cursor-not-allowed'}`}
+                      disabled={verificationCode.length !== 6 || isLoading}
+                    >
+                      {isLoading ? 'Verifying...' : 'Verify & Enable'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRouteChangeSettings}
+                      className="ph3 pv2 input-reset ba b--gray bg-transparent grow pointer f6 dib"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

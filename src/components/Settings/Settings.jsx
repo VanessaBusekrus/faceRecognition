@@ -1,4 +1,4 @@
-const Settings = ({ setShowTwoFactorSetup, handleRouteChange, user2FAEnabled }) => {
+const Settings = ({ setShowTwoFactorSetup, handleRouteChangeHome, handleRouteChange2FASetup, user2FAEnabled }) => {
     if (user2FAEnabled) {
         return (
             <div className="glass br3 ba b--black-10 mv4 w-90 w-75-m w-50-l mw7 shadow-5 center">
@@ -32,10 +32,11 @@ const Settings = ({ setShowTwoFactorSetup, handleRouteChange, user2FAEnabled }) 
                         Add an extra layer of security to your account
                     </p>
                     <button
-                        onClick={setShowTwoFactorSetup}
-                        className="b ph3 pv2 input-reset ba b--black bg-light-purple hover:bg-purple-300/50 text-black grow pointer f6"
+                        // onClick={setShowTwoFactorSetup}
+                        onClick={handleRouteChange2FASetup}
+                        className="b ph3 pv2 input-reset ba b--black bg-transparent hover-bg-black hover-white text-black grow pointer f6"
                         >
-                        Enable 2FA
+                        Go to security setup
                     </button>
                 </div>
             </div>
@@ -44,7 +45,7 @@ const Settings = ({ setShowTwoFactorSetup, handleRouteChange, user2FAEnabled }) 
             
             <div className="mt4">
               <button
-                onClick={handleRouteChange}
+                onClick={handleRouteChangeHome}
                 className="ph3 pv2 input-reset ba b--gray bg-transparent grow pointer f6"
               >
                 Back to Home

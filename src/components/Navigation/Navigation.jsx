@@ -1,7 +1,7 @@
 const Navigation = ({ route, handleRouteChange }) => {
 	return (
 	  <nav style={{ display: 'flex', justifyContent: 'flex-end' }}>
-		{route === 'signIn' && (
+		{(route === 'signIn' || route === '2fa-verify') && (
 		  <p
 			onClick={() => handleRouteChange('register')}
 			className="f3 link dim black underline pa3 pointer"
@@ -33,7 +33,7 @@ const Navigation = ({ route, handleRouteChange }) => {
 			</p>
 		  </>
 		)}
-		{route === 'settings' && (
+		{(route === 'settings' || route === '2fa-setup') && (
 		  <>
 			<p
 			  onClick={() => handleRouteChange('home')}

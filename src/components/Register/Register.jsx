@@ -152,7 +152,7 @@ const Register = ({ handleRouteChange, handleSignIn }) => {
 							type="submit"
 							className={`b ph3 pv2 input-reset ba b--black grow pointer f6 dib ${
 								!passwordValidation.isValid || !name || !email 
-									? 'bg-light-gray gray cursor-not-allowed' 
+									? 'bg-transparent gray cursor-not-allowed' 
 									: 'bg-transparent hover-bg-black hover-white'
 							}`}
 							disabled={!passwordValidation.isValid || !name || !email}
