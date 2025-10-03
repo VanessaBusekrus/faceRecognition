@@ -57,7 +57,10 @@ const App = () => {
 
   // useRef ('use' is hook naming convention). Reference is like a pointer or address that points to a location in memory where the data is stored.
   const imageRef = useRef(null);
-  const lastValidationResult = useRef(null); // Store processed validation result instead of raw data
+  // Here, `lastValidationResult` will store the most recent face detection validation result (regions + faceCount). 
+  // Unlike useState, changing `.current` does NOT trigger a re-render, which makes it efficient for caching data between renders 
+  // (e.g., holding Clarifai's API response for later use in `handleImageLoad`).
+  const lastValidationResult = useRef(null);
 
   /*--- Side Effects (e.g., API calls to fetch data from servers) ---*/
   // useEffect to check backend server connection on component mount - after initial render
